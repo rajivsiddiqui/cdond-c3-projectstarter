@@ -75,35 +75,59 @@ jobs:
 
   test-frontend:
     docker:
-      # Docker image here
+      - image: circleci/node:13.8.0
     steps:
-      # Checkout code from git
-      # Restore from cache
-      # Your job code here
+      - checkout
+      - restore_cache:
+           keys: [frontend-build]
+      - run:
+          name: test-frontend 
+          command: |
+             cd frontend
+             npm i
+             npm run test
                 
   test-backend:
-    docker:
-      # Docker image here
-    steps:
-      # Checkout code from git
-      # Restore from cache
-      # Your job code here
+      docker:
+        - image: circleci/node:13.8.0
+      steps:
+        - checkout
+        - restore_cache:
+           keys: [backend-build]
+        - run:
+            name: test-backend 
+            command: |
+             cd backend
+             npm i
+             npm run test
             
   scan-frontend:
     docker:
-      # Docker image here
+      - image: circleci/node:13.8.0
     steps:
-      # Checkout code from git
-      # Restore from cache
-      # Your job code here
+      - checkout
+      - restore_cache:
+           keys: [frontend-build]
+      - run:
+            name: scan-frontend 
+            command: |
+             cd backend
+             npm i
+             npm audit fix --audit-level=critical --force
 
   scan-backend:
     docker:
-      # Docker image here
+      - image: circleci/node:13.8.0
     steps:
-      # Checkout code from git
-      # Restore from cache
-      # Your job code here
+      - checkout
+      - restore_cache:
+           keys: [backend-build]
+      - run:
+            name: scan-backend 
+            command: |
+             cd backend
+             npm i
+             npm audit fix --audit-level=critical --force
 
   deploy-infrastructure:
     docker:
