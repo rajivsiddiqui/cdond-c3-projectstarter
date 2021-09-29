@@ -2,26 +2,24 @@ version: 2.1
 
 commands:
   destroy-environment:
-    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
+    description: Destroy back-end and front-end cloudformation stacks given a workflow ID. 
     parameters:
       workflow_id:
-        type: string   
+        type: string 
     steps:
       - run:
           name: Destroy environments
-          when: on_fail
+          when: on_fail 
           command: |
             aws s3 rm s3://udapeople-"${CIRCLE_WORKFLOW_ID}" --recursive
             aws s3 rb s3://udapeople-"${CIRCLE_WORKFLOW_ID}" --force
             aws cloudformation delete-stack --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}"
-            aws cloudformation delete-stack --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID}"
-            exit 1
-
+            aws cloudformation delete-stack --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID}"    
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
     parameters:
       workflow_id:
-        type: string      
+        type: string     
     steps:
       - run:
           name: Revert migrations
@@ -35,7 +33,6 @@ commands:
               npm run migrations:revert
               exit 1
             fi
-            
 jobs:
   build-frontend:
     docker:
@@ -50,10 +47,9 @@ jobs:
             cd frontend
             npm i
             npm run build
-            exit 1
       - save_cache:
           paths: [frontend/node_modules]
-          key: frontend-build
+          key: frontend-build      
 
   build-backend:
     docker:
@@ -63,12 +59,11 @@ jobs:
       - restore_cache:
           keys: [backend-build]
       - run:
-          name: Back-end build
+          name: Build Back-end 
           command: |
              cd backend
              npm i
              npm run build
-             exit 1
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
@@ -85,8 +80,7 @@ jobs:
           command: |
              cd frontend
              npm i
-             npm run test
-                
+             npm run test              
   test-backend:
       docker:
         - image: circleci/node:13.8.0
@@ -99,8 +93,7 @@ jobs:
             command: |
              cd backend
              npm i
-             npm run test
-            
+             npm run test   
   scan-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -114,7 +107,6 @@ jobs:
              cd backend
              npm i
              npm audit fix --audit-level=critical --force
-
   scan-backend:
     docker:
       - image: circleci/node:13.8.0
@@ -127,8 +119,7 @@ jobs:
             command: |
              cd backend
              npm i
-             npm audit fix --audit-level=critical --force
-
+             npm audit fix --audit-level=critical --force  
   deploy-infrastructure:
     docker:
       - image: amazon/aws-cli
@@ -169,15 +160,16 @@ jobs:
           workflow_id: ${CIRCLE_WORKFLOW_ID}
 
       - revert-migrations:
-          workflow_id: ${CIRCLE_WORKFLOW_ID}      
+          workflow_id: ${CIRCLE_WORKFLOW_ID}  
 
+      
   configure-infrastructure:
     docker:
       - image: python:3.7-alpine3.11
     steps:
       - checkout
       - add_ssh_keys:
-          fingerprints: ['4c:d2:f4:f5:ff:ec:95:60:eb:2f:ec:d7:33:79:1c:b9']
+          fingerprints: ['4c:d2:f4:f5:ff:ec:95:60:eb:2f:ec:d7:33:79:1c:b9'] #['69:fe:8c:6a:bb:be:56:11:a7:e8:4d:27:b9:59:6d:90'] #["2c:96:88:f7:91:5d:4f:3d:8e:41:d8:bd:46:c0:ee:7e"]
       - attach_workspace:
           at: .circleci/ansible
       - run:
@@ -230,7 +222,6 @@ jobs:
       - revert-migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID}
 
-
   deploy-frontend:
     docker:
       - image: amazon/aws-cli
@@ -258,7 +249,11 @@ jobs:
             cd frontend
             npm install
             npm run build
-            aws s3 cp ./dist s3://udapeople-${CIRCLE_WORKFLOW_ID} --recursive      
+            aws s3 cp ./dist s3://udapeople-${CIRCLE_WORKFLOW_ID} --recursive
+     # - destroy-environment:
+      #    workflow_id: ${CIRCLE_WORKFLOW_ID}    
+      #- revert-migrations:
+       #   workflow_id: ${CIRCLE_WORKFLOW_ID}    
                     
   deploy-backend:
     docker:
@@ -296,7 +291,12 @@ jobs:
             cat backend/.env
             cd .circleci/ansible/
             export ANSIBLE_HOST_KEY_CHECKING=False
-            ansible-playbook -i inventory.txt deploy-backend.yml  
+            ansible-playbook -i inventory.txt deploy-backend.yml
+            
+      #- destroy-environment:
+       #   workflow_id: ${CIRCLE_WORKFLOW_ID}   
+      #- revert-migrations:
+       #   workflow_id: ${CIRCLE_WORKFLOW_ID}    
 
   smoke-test:
     docker:
@@ -328,7 +328,11 @@ jobs:
               return 0
             else
               return 1
-            fi  
+            fi
+     # - destroy-environment:
+      #    workflow_id: ${CIRCLE_WORKFLOW_ID}  
+      #- revert-migrations:
+       #   workflow_id: ${CIRCLE_WORKFLOW_ID}    
 
   cloudfront-update:
     docker:
@@ -342,9 +346,13 @@ jobs:
               --template-file .circleci/files/cloudfront.yml \
               --stack-name udapeople-cloudfront-${CIRCLE_WORKFLOW_ID} \
               --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID}" \
-              --tags project=udapeople-cloudfront  
+              --tags project=udapeople-cloudfront
+     # - destroy-environment:
+      #    workflow_id: ${CIRCLE_WORKFLOW_ID}   
+     # - revert-migrations:
+      #    workflow_id: ${CIRCLE_WORKFLOW_ID}
 
-cleanup:
+  cleanup:
     docker:
       - image: amazon/aws-cli
     steps:
@@ -365,9 +373,7 @@ cleanup:
               aws s3 rb s3://udapeople-${OldWorkflowID} --force
               aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
               aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
-            fi  
-            
-
+            fi
 workflows:
   default:
     jobs:
@@ -394,4 +400,6 @@ workflows:
       - smoke-test:
           requires: [deploy-backend, deploy-frontend]    
       - cloudfront-update:
-          requires: [smoke-test]
+          requires: [smoke-test]   
+      #- cleanup:
+         # requires: [cloudfront-update] 
